@@ -46,17 +46,8 @@ with col2:
             # แปลงรูปภาพให้เข้ากับโมเดล
             image = image.convert('RGB') 
             
-            # 1. หาขนาดที่สั้นที่สุดเพื่อตัดรูปเป็นสี่เหลี่ยมจัตุรัส (Center Crop)
-            width, height = image.size
-            min_dim = min(width, height)
-            left = (width - min_dim) / 2
-            top = (height - min_dim) / 2
-            right = (width + min_dim) / 2
-            bottom = (height + min_dim) / 2
-            image_cropped = image.crop((left, top, right, bottom))
-            
-            # 2. ค่อยย่อขนาดเป็น 224x224 ตามที่ MobileNetV2 (โมเดล V2) ต้องการ
-            image_resized = image_cropped.resize((224, 224)) 
+            # --- แก้ไข: ย่อขนาดเป็น 224x224 ตรงๆ ไม่ตัดขอบ เพื่อให้ AI เห็นเล็บเต็มๆ ---
+            image_resized = image.resize((224, 224)) 
             
             img_array = np.array(image_resized)
             img_array = img_array / 255.0 
