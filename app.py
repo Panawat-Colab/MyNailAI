@@ -13,7 +13,7 @@ st.set_page_config(
 # ฟังก์ชันสำหรับโหลดโมเดล 
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model('nail_disease_model_v1.h5')
+    model = tf.keras.models.load_model('nail_disease_model_v2.h5')
     return model
 
 with st.spinner('กำลังเตรียมระบบ AI... 🤖'):
