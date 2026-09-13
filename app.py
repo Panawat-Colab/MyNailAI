@@ -44,7 +44,6 @@ with col2:
     if uploaded_file is not None:
         with st.spinner('กำลังสแกนและประเมินผล...'):
             # แปลงรูปภาพให้เข้ากับโมเดล
-# --- อัปเดตใหม่: ตัดรูปภาพให้สัดส่วนไม่เพี้ยน ---
             image = image.convert('RGB') 
             
             # 1. หาขนาดที่สั้นที่สุดเพื่อตัดรูปเป็นสี่เหลี่ยมจัตุรัส (Center Crop)
@@ -56,17 +55,17 @@ with col2:
             bottom = (height + min_dim) / 2
             image_cropped = image.crop((left, top, right, bottom))
             
-            # 2. ค่อยย่อขนาดเป็น 128x128 ตามที่ AI ต้องการ
-            image_resized = image_cropped.resize((128, 128)) 
+            # 2. ค่อยย่อขนาดเป็น 224x224 ตามที่ MobileNetV2 (โมเดล V2) ต้องการ
+            image_resized = image_cropped.resize((224, 224)) 
             
             img_array = np.array(image_resized)
             img_array = img_array / 255.0 
             img_array = np.expand_dims(img_array, axis=0) 
-            # --------------------------------------------
+            
             # ให้ AI ทำนายผล
             predictions = model.predict(img_array)
             
-         # --- แก้ไขชื่อโรค 6 คลาสให้ตรงกับที่เทรนใน Colab เป๊ะๆ ---
+            # แก้ไขชื่อโรค 6 คลาสให้ตรงกับที่เทรนใน Colab เป๊ะๆ
             class_names = [
                 'โรคมะเร็งผิวหนัง (Acral Lentiginous Melanoma)', # คลาส 0
                 'เล็บปกติ (Healthy Nail)',                      # คลาส 1
@@ -76,18 +75,26 @@ with col2:
                 'เล็บเป็นหลุมสะเก็ดเงิน (Pitting)'                 # คลาส 5
             ]   
             
-            predicted_class = class_names[np.argmax(predictions)]
             confidence = float(np.max(predictions) * 100)
+            predicted_class = class_names[np.argmax(predictions)]
             
-            # แสดงผลลัพธ์
-            st.success(f"พบความเสี่ยง: **{predicted_class}**")
-            
-            # แสดงหลอดความมั่นใจ
-            st.write(f"ความมั่นใจของโมเดล: **{confidence:.2f}%**")
-            st.progress(int(confidence)) # หลอดสีแสดงเปอร์เซ็นต์
+            # --- อัปเดตใหม่: ระบบคัดกรองรูปภาพ (Threshold 75%) ---
+            if confidence < 75.0:
+                st.warning("⚠️ ภาพไม่ชัดเจน หรืออาจไม่ใช่ภาพเล็บ")
+                st.write(f"ระบบมีความมั่นใจเพียง **{confidence:.2f}%** ซึ่งต่ำกว่าเกณฑ์ที่กำหนด (75%) กรุณาถ่ายรูปในที่สว่าง หรือถ่ายให้เห็นหน้าเล็บชัดเจนขึ้นแล้วลองใหม่อีกครั้งครับ")
+            else:
+                # ถ้าเป็นเล็บปกติ ให้โชว์กล่องสีเขียว (success) ถ้าเป็นโรคให้โชว์กล่องสีแดง (error)
+                if np.argmax(predictions) == 1: 
+                    st.success(f"ผลการวิเคราะห์: **{predicted_class}** 🌟")
+                else:
+                    st.error(f"พบความเสี่ยง: **{predicted_class}**")
+                
+                # แสดงหลอดความมั่นใจ
+                st.write(f"ความมั่นใจของโมเดล: **{confidence:.2f}%**")
+                st.progress(int(confidence)) # หลอดสีแสดงเปอร์เซ็นต์
             
             st.warning("⚠️ หมายเหตุ: นี่เป็นการประเมินเบื้องต้นโดย AI เท่านั้น ควรปรึกษาแพทย์ผู้เชี่ยวชาญเพื่อการรักษานะครับ")
             
             # ซ่อนข้อมูลดิบไว้เพื่อไม่ให้เกะกะ
             with st.expander("ดูข้อมูลเชิงลึก (สำหรับนักพัฒนา)"):
-                st.write("ค่าความน่าจะเป็นของแต่ละหมวดหมู่:", predictions)    
+                st.write("ค่าความน่าจะเป็นของแต่ละหมวดหมู่:", predictions)
